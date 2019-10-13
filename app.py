@@ -3,7 +3,7 @@ import datetime  # for timing
 import threading  # for threads
 import time  # for time --> remove when rtc is working
 
-import BlynkLib  # for blynk app
+import blynklib  # for blynk app
 import RPi.GPIO as GPIO  # for GPIO
 import spidev  # for SPI
 
@@ -11,16 +11,17 @@ import spidev  # for SPI
 
 IsGPIO = False
 IsSPI = False
-delay = 5
+delay = 1 #inital delay time
 logging = True
-blynk = BlynkLib.Blynk('')  # Initialize Blynk
+blynk = blynklib.Blynk('YX0MrCEqDyKmbWiOJO-8sgqcq7YmGzZu')  # Initialize Blynk
 
 # For ADC SPI
 firstByte = int('00000001', 2)
-humidityByte = int('10000000', 2)
-lightByte = int('10010000', 2)
-tempByte = int('10100000', 2)
+lightByte = int('10000000', 2)
+tempByte  = int('10010000', 2)
+humidityByte = int('10100000', 2)
 lastByte = int('00000000', 2)
+
 adc = spidev.SpiDev()
 
 # For time
@@ -42,16 +43,13 @@ Vout = 0
 def init():
 
     # init Gpio
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setup(14, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    GPIO.setup(15, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    GPIO.setup(18, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    GPIO.setup(23, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.setmode(GPIO.BOARD)
+    GPIO.setup(7, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+    GPIO.setup(11, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+    GPIO.setup(36, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+    GPIO.setup(29, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
-    # outputs
-    #GPIO.setup(chipSelectPins, GPIO.OUT)
-    # GPIO.output(chipSelectPins, 1) # set chip select pins hight because communication starts on a logic low.
-
+    
     # init SPI    adc = spidev.SpiDev()
     adc.open(0, 0)
     IsSPI = True
@@ -67,11 +65,10 @@ def init():
     threads.append(buttonThread)
 
     # Setup interupts for HW buttons
-    GPIO.add_event_detect(15, GPIO.FALLING, callback=increment, bouncetime=130)
-    GPIO.add_event_detect(18, GPIO.FALLING, callback=decrement, bouncetime=130)
-    GPIO.add_event_detect(
-        14, GPIO.FALLING, callback=resetSysTime, bouncetime=130)
-    GPIO.add_event_detect(23, GPIO.FALLING, callback=stopStart, bouncetime=130)
+    GPIO.add_event_detect(7, GPIO.FALLING, callback=increment, bouncetime=130)
+    GPIO.add_event_detect(11, GPIO.FALLING, callback=decrement, bouncetime=130)
+    GPIO.add_event_detect(36, GPIO.FALLING, callback=resetSysTime, bouncetime=130)
+    GPIO.add_event_detect(29, GPIO.FALLING, callback=stopStart, bouncetime=130)
 
     # Start threads
     for thread in threads:
@@ -110,7 +107,7 @@ def DACThreadFunction():
 
 def buttonThreadFunction():
     # Register Virtual Pins
-    @blynk.VIRTUAL_WRITE(1)
+    ## @blynk.VIRTUAL_WRITE(1)
     def my_write_handler(value):
         global delay
         delay = int(value[0])
@@ -176,7 +173,14 @@ def resetSysTime(channel):
 
 def stopStart(channel):
     global logging
-    logging = not logging
+    if(logging):
+        logging = False
+        print("\nLogging stopped.. ")
+    else:
+        logging =True
+        print("\nLogging started.. ")
+    
+    
 
 
 def main():
